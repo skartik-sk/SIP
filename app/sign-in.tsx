@@ -45,10 +45,10 @@ export default function SignInScreen() {
           {/* App Title */}
           <View className="items-center mb-6">
             <Text className="text-2xl font-bold text-[#14F1B2] text-center mb-2">
-              DASHH
+              SIP
             </Text>
             <Text className="text-sm text-[#00B49F] text-center">
-              Decentralized Engagement Platform
+              Solana Influencer Platform
             </Text>
           </View>
 
