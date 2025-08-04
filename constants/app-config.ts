@@ -4,7 +4,7 @@ import { ClusterNetwork } from '@/components/cluster/cluster-network'
 
 export class AppConfig {
   static name = 'sip'
-  static uri = 'https://example.com'
+  static uri = 'https://skartik.xyz'
   static clusters: Cluster[] = [
     {
       id: 'solana:devnet',
@@ -12,11 +12,6 @@ export class AppConfig {
       endpoint: clusterApiUrl('devnet'),
       network: ClusterNetwork.Devnet,
     },
-    {
-      id: 'solana:testnet',
-      name: 'Testnet',
-      endpoint: clusterApiUrl('testnet'),
-      network: ClusterNetwork.Testnet,
-    },
+    
   ]
 }

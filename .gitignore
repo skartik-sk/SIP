@@ -2,13 +2,14 @@
 
 # dependencies
 node_modules/
-
+blinks-mini/
 # Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
-
+ios/
+android/
 # Native
 .kotlin/
 *.orig.*

@@ -1,31 +1,48 @@
+import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import React from 'react'
-import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
-      {/* The index redirects to the account screen */}
-      <Tabs.Screen name="index" options={{ tabBarItemStyle: { display: 'none' } }} />
+    <Tabs
+      screenOptions={{
+        
+        tabBarActiveTintColor: '#8DFFF0',
+        tabBarInactiveTintColor: '#134160',
+        tabBarStyle: {
+          backgroundColor: '#0E151A',
+          borderTopWidth: 1,
+          height: 100,
+          paddingBottom: 40,
+          paddingTop: 15,
+          paddingHorizontal: 20,
+          
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: 5,
+        },
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
+      }}
+    >
       <Tabs.Screen
-        name="account"
+        name="index"
         options={{
-          title: 'Account',
-          tabBarIcon: ({ color }) => <UiIconSymbol size={28} name="wallet.pass.fill" color={color} />,
+          title: 'Discover',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="compass" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <UiIconSymbol size={28} name="gearshape.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="demo"
-        options={{
-          title: 'Demo',
-          tabBarIcon: ({ color }) => <UiIconSymbol size={28} name="ladybug.fill" color={color} />,
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
