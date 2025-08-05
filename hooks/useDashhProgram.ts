@@ -16,6 +16,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import BN from 'bn.js'
 import { toByteArray } from 'react-native-quick-base64'
+import { v4 as uuidv4 } from 'uuid'
 
 const PROGRAM_ID = '7qpRXNFY5PJQfwptK4BosJ5jCnVeEYRWATFu8BBDTVcr'
 
@@ -113,7 +114,10 @@ export function useDashhProgram() {
       })
 
       // Generate a unique ID for the campaign using a simpler approach
-      const campaignId = new anchor.BN(Math.floor(Math.random() * 1000000))
+      // ...
+      const campaignId = new anchor.BN(
+        BigInt('0x' + uuidv4().replace(/-/g, '').slice(0, 16))
+      )
 
       // Convert endtime and reward to BN properly
       // If endtime is in milliseconds (from date picker), convert to seconds
@@ -189,45 +193,38 @@ export function useDashhProgram() {
         user: user.toString().slice(0, 8) + '...',
       })
 
-      const signature = await transact(async (wallet: Web3MobileWallet) => {
-        console.log('📱 Authorizing wallet...')
-        const authorizationResult = await wallet.authorize({
-          chain: 'solana:devnet',
-          identity: APP_IDENTITY,
-        })
+      const blockhash = await connection.getLatestBlockhash()
 
-        const authorizedPubkey = new PublicKey(toByteArray(authorizationResult.accounts[0].address))
+        const instructions = await program.methods
+              .createParticipent(
+                new anchor.BN(id),
+                user
+              )
+              .accounts({
+            signer: account.publicKey,
+          })
+          .instruction()
 
-        const latestBlockhash = await connection.getLatestBlockhash()
-
-        // Placeholder instruction for participant creation
-        const instructions = [
-          SystemProgram.transfer({
-            fromPubkey: authorizedPubkey,
-            toPubkey: new PublicKey(PROGRAM_ID),
-            lamports: 1000, // Small fee for participation
-          }),
-        ]
-
+        // Construct the Versioned message and transaction.
         const txMessage = new TransactionMessage({
-          payerKey: authorizedPubkey,
-          recentBlockhash: latestBlockhash.blockhash,
-          instructions,
+          payerKey: account.publicKey,
+          recentBlockhash: blockhash.blockhash,
+          instructions: [instructions],
         }).compileToV0Message()
 
-        const transaction = new VersionedTransaction(txMessage)
+        const transferTx = new VersionedTransaction(txMessage)
 
-        console.log('📤 Signing participation...')
-        const transactionSignatures = await wallet.signAndSendTransactions({
-          transactions: [transaction],
-        })
-
-        console.log('✅ Joined campaign, signature:', transactionSignatures[0].slice(0, 8) + '...')
-        return transactionSignatures[0]
-      })
-
-      return signature
-    },
+       const txSignature = await signAndSendTransaction(transferTx,1)
+   const confirmationResult = await connection.confirmTransaction(
+  txSignature,
+  "confirmed"
+);
+      if (confirmationResult.value.err) {
+        throw new Error(JSON.stringify(confirmationResult.value.err))
+      } else {
+        console.log('Transaction successfully submitted!')
+        return txSignature
+      }},
     onSuccess: () => {
       toast.show('Joined campaign successfully!')
       accounts.refetch()

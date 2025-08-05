@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/auth/auth-provider'
 import { COLORS, SPACING } from '@/constants/theme'
 import { useDashhProgram } from '@/hooks/useDashhProgram'
+import { bnToTimestamp } from '@/utils/lamports-to-sol'
 import { Ionicons } from '@expo/vector-icons'
 import { PublicKey } from '@solana/web3.js'
 import * as Haptics from 'expo-haptics'
@@ -75,10 +76,10 @@ export default function CampaignDetailsScreen() {
       const campaignData: CampaignDetails = {
         id: campaignAccount.account.id.toString(),
         title: campaignAccount.account.title,
-        description: campaignAccount.account.description,
-        image: campaignAccount.account.image,
-        reward: campaignAccount.account.reward.toNumber() / 1000000000, // Convert lamports to SOL
-        endTime: campaignAccount.account.endtime.toNumber(),
+        description: campaignAccount.account.image,
+        image: campaignAccount.account.description,
+        reward: campaignAccount.account.reward.toNumber() , // Convert lamports to SOL
+        endTime: bnToTimestamp(campaignAccount.account.endtime.toNumber()),
         participants: participantCount,
         creator: campaignAccount.account.owner.toString(),
         isParticipating,
@@ -105,19 +106,12 @@ export default function CampaignDetailsScreen() {
       setParticipating(true)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-      Alert.alert(
-        'Join Campaign',
-        `Are you sure you want to participate in "${campaign.title}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Join',
-            onPress: async () => {
+      
               try {
                 await createParticipant.mutateAsync({
                   id: parseInt(campaign.id),
-                  user: publicKey || new PublicKey('11111111111111111111111111111111'),
-                  points: 0,
+                  user: publicKey ,
+                   points: 0,
                 })
                 
                 Alert.alert(
@@ -129,15 +123,12 @@ export default function CampaignDetailsScreen() {
               } catch (error) {
                 console.error('Error joining campaign:', error)
                 Alert.alert('Error', 'Failed to join campaign. Please try again.')
-              }
-            },
-          },
-        ]
-      )
+            }
     } catch (error) {
       console.error('Error participating:', error)
     } finally {
       setParticipating(false)
+      paccounts.refetch()
     }
   }
 

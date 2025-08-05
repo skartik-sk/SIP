@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/auth/auth-provider'
 import { useDashhProgram } from '@/hooks/useDashhProgram'
 import { Campaign,Participant } from '@/types/campaign'
+import { bnToSol, bnToTimestamp } from '@/utils/lamports-to-sol'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -70,95 +71,10 @@ export default function DiscoverScreen() {
       // We just need to process the data when it's available
       if (accounts.data && Array.isArray(accounts.data) && accounts.data.length > 0) {
         // console.log(`✅ Processing ${accounts.data.length} campaigns from blockchain`);
-
-        const campaignData = accounts.data.map((account:any) => {
+        
+        const campaignData = accounts.data.map((account: any) => {
           // Helper function to safely convert BN to number using Anchor's BN
-          const bnToNumber = (value: any) => {
-            if (!value) return 0;
-            if (typeof value === 'number') return value;
-            
-            // Handle Anchor BN objects
-            if (value && typeof value === 'object') {
-              // Try using BN methods
-              if (value.toNumber && typeof value.toNumber === 'function') {
-                try {
-                  return value.toNumber();
-                } catch (e) {
-                  // If toNumber fails due to size, try toString then parse
-                  console.warn("BN too large for toNumber, using toString:", e);
-                  try {
-                    return parseInt(value.toString());
-                  } catch (e2) {
-                    console.warn("Failed to parse BN string:", e2);
-                    return 0;
-                  }
-                }
-              }
-              
-              // Try toString method for very large BNs
-              if (value.toString && typeof value.toString === 'function') {
-                try {
-                  const strValue = value.toString();
-                  return parseInt(strValue);
-                } catch (e) {
-                  console.warn("Failed to convert BN toString to number:", e);
-                  return 0;
-                }
-              }
-              
-              // Handle plain objects with _bn property (common in Anchor)
-              if (value._bn) {
-                try {
-                  return parseInt(value._bn.toString());
-                } catch (e) {
-                  console.warn("Failed to convert _bn property:", e);
-                  return 0;
-                }
-              }
-            }
-            
-            return 0;
-          };
-
-          // Helper function to convert BN to SOL amount
-          const bnToSol = (value: any) => {
-            const lamports = bnToNumber(value);
-            return lamports  // Convert lamports to SOL
-          };
-
-          // Helper function to convert BN timestamp to reasonable date
-          const bnToTimestamp = (value: any) => {
-            const timestamp = bnToNumber(value);
-            
-            // Handle common timestamp formats
-            if (timestamp === 0) {
-              // If timestamp is 0, set to far future (campaign never expires)
-              return Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60); // 1 year from now
-            }
-            
-            // If timestamp looks like seconds since epoch (reasonable range)
-            if (timestamp > 1_000_000_000 && timestamp < 4_000_000_000) {
-              return timestamp;
-            }
-            
-            // If timestamp is very small, treat as duration from now
-            if (timestamp < 1_000_000) {
-              return Math.floor(Date.now() / 1000) + timestamp;
-            }
-            
-            // If timestamp is too large, try to make sense of it
-            if (timestamp > 4_000_000_000) {
-              // Might be milliseconds, convert to seconds
-              const tsInSeconds = Math.floor(timestamp / 1000);
-              if (tsInSeconds > 1_000_000_000 && tsInSeconds < 4_000_000_000) {
-                return tsInSeconds;
-              }
-              // If still too large, use current time + 1 hour as fallback
-              return Math.floor(Date.now() / 1000) + 3600;
-            }
-            
-            return timestamp;
-          };
+        
 
           const campaignData = {
             id: account?.account?.id?.toString() || 'unknown',
@@ -166,7 +82,7 @@ export default function DiscoverScreen() {
             description: account?.account?.image || 'No description', // Swapped: description is in image field
             image: account?.account?.description || '', // Swapped: image is in description field
             reward: bnToSol(account?.account?.reward), // Convert lamports to SOL properly
-            endTime: bnToTimestamp(account?.account?.endtime),
+            endtime: bnToTimestamp(account?.account?.endtime),
             participants: 0, // This would come from participants query
             creator: account?.account?.owner?.toString() || 'unknown',
           };
