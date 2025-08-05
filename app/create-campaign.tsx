@@ -1,58 +1,43 @@
 import { useAuth } from '@/components/auth/auth-provider'
 import { COLORS, SPACING } from '@/constants/theme'
 import { useDashhProgram } from '@/hooks/useDashhProgram'
+import { CreateCampaignParams } from '@/types/campaign'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import * as ImagePicker from 'expo-image-picker'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import React, { useState } from 'react'
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 
 export default function CreateCampaignScreen() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [imageUri, setImageUri] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [tags, setTags] = useState('')
   const [reward, setReward] = useState('')
   const [duration, setDuration] = useState('7')
   const [loading, setLoading] = useState(false)
+  const [imagePreviewError, setImagePreviewError] = useState(false)
 
   const { createCampaign } = useDashhProgram()
   const { isAuthenticated } = useAuth()
 
-  const handleImagePicker = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Camera roll permission is required to select images')
-        return
-      }
+  const handleImageUrlChange = (url: string) => {
+    setImageUrl(url)
+    setImagePreviewError(false)
+  }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      })
-
-      if (!result.canceled) {
-        setImageUri(result.assets[0].uri)
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      }
-    } catch (error) {
-      console.error('Error picking image:', error)
-      Alert.alert('Error', 'Failed to select image')
-    }
+  const handleImageError = () => {
+    setImagePreviewError(true)
   }
 
   const handleSubmit = async () => {
@@ -61,8 +46,8 @@ export default function CreateCampaignScreen() {
       return
     }
 
-    if (!title.trim() || !description.trim() || !reward.trim()) {
-      Alert.alert('Missing Information', 'Please fill in all required fields')
+    if (!title.trim() || !description.trim() || !reward.trim() || !tags.trim() || !imageUrl.trim()) {
+      Alert.alert('Missing Information', 'Please fill in all required fields including image URL and tags')
       return
     }
 
@@ -78,16 +63,13 @@ export default function CreateCampaignScreen() {
 
       const endTime = Math.floor(Date.now() / 1000) + (parseInt(duration) * 24 * 60 * 60)
       
-      const campaignData = {
-        title: title.trim(),
-        description: description.trim(),
-        image: imageUri || 'https://via.placeholder.com/400x225',
-        lable: tags.trim() || 'general',
-        endtime: endTime,
-        reward: Math.floor(rewardAmount * 1000000000), // Convert SOL to lamports
-      }
+        
+      const campaignData =
+        { title, description, image: imageUrl, lable: tags, endtime: endTime, reward: rewardAmount } as CreateCampaignParams
+      
 
-     // await createCampaign.mutateAsync(campaignData)
+      console.log('📤 Submitting campaign data:', campaignData)
+      await createCampaign.mutateAsync(campaignData)
       
       Alert.alert(
         'Campaign Created!',
@@ -121,17 +103,44 @@ export default function CreateCampaignScreen() {
         <View style={styles.form}>
           {/* Image Section */}
           <View style={styles.imageSection}>
-            <Text style={styles.label}>Campaign Image</Text>
-            <TouchableOpacity style={styles.imagePicker} onPress={handleImagePicker}>
-              {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.selectedImage} />
-              ) : (
-                <View style={styles.imagePickerContent}>
-                  <Ionicons name="camera" size={32} color={COLORS.GRAY} />
-                  <Text style={styles.imagePickerText}>Tap to select image</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            <Text style={styles.label}>Campaign Image URL *</Text>
+            <TextInput
+              style={styles.input}
+              value={imageUrl}
+              onChangeText={handleImageUrlChange}
+              placeholder="https://example.com/image.jpg"
+              placeholderTextColor={COLORS.GRAY}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            
+            {/* Image Preview */}
+            {imageUrl ? (
+              <View style={styles.imagePreviewContainer}>
+                <Text style={styles.previewLabel}>Preview:</Text>
+                {!imagePreviewError ? (
+                  <Image 
+                    source={{ uri: imageUrl }} 
+                    style={styles.imagePreview}
+                    onError={handleImageError}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.imageErrorContainer}>
+                    <Ionicons name="image" size={32} color={COLORS.GRAY} />
+                    <Text style={styles.imageErrorText}>Failed to load image</Text>
+                    <Text style={styles.imageErrorSubtext}>Please check the URL</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View style={styles.imageHintContainer}>
+                <Ionicons name="information-circle" size={16} color={COLORS.BRIGHT_GREEN} />
+                <Text style={styles.imageHintText}>
+                  Enter a valid image URL to see preview
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Title Input */}
@@ -164,7 +173,7 @@ export default function CreateCampaignScreen() {
 
           {/* Tags Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tags</Text>
+            <Text style={styles.label}>Tags *</Text>
             <TextInput
               style={styles.input}
               value={tags}
@@ -375,5 +384,51 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.WHITE,
     marginLeft: SPACING.SM,
+  },
+  imagePreviewContainer: {
+    marginTop: SPACING.MD,
+  },
+  previewLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.WHITE,
+    marginBottom: SPACING.SM,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: COLORS.SECONDARY_DARK,
+  },
+  imageErrorContainer: {
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: `${COLORS.SECONDARY_DARK}50`,
+    borderWidth: 1,
+    borderColor: COLORS.SECONDARY_DARK,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageErrorText: {
+    fontSize: 14,
+    color: COLORS.GRAY,
+    marginTop: SPACING.SM,
+    fontWeight: '600',
+  },
+  imageErrorSubtext: {
+    fontSize: 12,
+    color: COLORS.GRAY,
+    marginTop: SPACING.XS,
+  },
+  imageHintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.SM,
+    paddingHorizontal: SPACING.SM,
+  },
+  imageHintText: {
+    fontSize: 12,
+    color: COLORS.BRIGHT_GREEN,
+    marginLeft: SPACING.XS,
   },
 })

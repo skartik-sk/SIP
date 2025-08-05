@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "templateexpobasic",
-    "userInterfaceStyle": "automatic",
+     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -48,6 +48,7 @@
           "photosPermission": "The app accesses your photos to let you upload campaign images."
         }
       ]
+      
     ],
     "experiments": {
       "typedRoutes": true

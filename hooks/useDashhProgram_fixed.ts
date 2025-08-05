@@ -6,12 +6,12 @@ import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
 import { transact, Web3MobileWallet } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js'
 import {
-  clusterApiUrl,
-  Connection,
-  PublicKey,
-  SystemProgram,
-  TransactionMessage,
-  VersionedTransaction,
+    clusterApiUrl,
+    Connection,
+    PublicKey,
+    SystemProgram,
+    TransactionMessage,
+    VersionedTransaction,
 } from '@solana/web3.js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import BN from 'bn.js'
@@ -73,7 +73,7 @@ interface ParticipantArgs {
 }
 
 export function useDashhProgram() {
-  const { account,signAndSendTransaction } = useWalletUi()
+  const { account } = useWalletUi()
   const toast = useToast()
   const queryClient = useQueryClient()
 
@@ -116,12 +116,7 @@ export function useDashhProgram() {
       const campaignId = new anchor.BN(Math.floor(Math.random() * 1000000))
 
       // Convert endtime and reward to BN properly
-      // If endtime is in milliseconds (from date picker), convert to seconds
-
       const endtimeAsU64 = new anchor.BN(endtime)
-      
-      // Convert reward from SOL to lamports if needed
-
       const rewardAsU64 = new anchor.BN(reward)
 
       console.log('📊 Campaign data converted:', {
@@ -133,11 +128,14 @@ export function useDashhProgram() {
         endtime: endtimeAsU64.toString(),
         reward: rewardAsU64.toString(),
         endtimeOriginal: endtime,
-
         rewardOriginal: reward,
       })
 
       const blockhash = await connection.getLatestBlockhash()
+
+      const txSignature = await transact(async (wallet) => {
+        // Convert base64 address to web3.js PublicKey class
+        const authorizedPubkey = new PublicKey(toByteArray(account.publicKey.toString()))
 
         const instructions = await program.methods
           .createCampaign(campaignId, title, description, image, lable, endtimeAsU64, rewardAsU64)
@@ -148,18 +146,24 @@ export function useDashhProgram() {
 
         // Construct the Versioned message and transaction.
         const txMessage = new TransactionMessage({
-          payerKey: account.publicKey,
+          payerKey: authorizedPubkey,
           recentBlockhash: blockhash.blockhash,
           instructions: [instructions],
         }).compileToV0Message()
 
         const transferTx = new VersionedTransaction(txMessage)
 
-       const txSignature = await signAndSendTransaction(transferTx,1)
-   const confirmationResult = await connection.confirmTransaction(
-  txSignature,
-  "confirmed"
-);
+        // Send the unsigned transaction, the wallet will sign and submit it to the network,
+        // returning the transaction signature.
+        const transactionSignatures = await wallet.signAndSendTransactions({
+          transactions: [transferTx],
+        })
+
+        return transactionSignatures[0]
+      })
+      
+      const confirmationResult = await connection.confirmTransaction(txSignature, 'confirmed')
+
       if (confirmationResult.value.err) {
         throw new Error(JSON.stringify(confirmationResult.value.err))
       } else {

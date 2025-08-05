@@ -1,17 +1,21 @@
+import { AccountUiBalance } from '@/components/account/account-ui-balance'
+import { useGetBalance } from '@/components/account/use-get-balance'
 import { useAuth } from '@/components/auth/auth-provider'
 import { WalletUiButtonConnect } from '@/components/solana/wallet-ui-button-connect'
 import { useDashhProgram } from '@/hooks/useDashhProgram'
+import { lamportsToSol } from '@/utils/lamports-to-sol'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
-import React, { useEffect, useState } from 'react'
+import React, { use, useEffect, useState } from 'react'
 import {
-    Alert,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 
 interface UserStats {
@@ -23,7 +27,8 @@ interface UserStats {
 }
 
 export default function ProfileScreen() {
-  const { isAuthenticated, publicKey, disconnect } = useAuth()
+  const authData = useAuth()
+  const { isAuthenticated, publicKey, disconnect } = authData || {}
   const { accounts, paccounts } = useDashhProgram()
   const [userStats, setUserStats] = useState<UserStats>({
     balance: 0,
@@ -32,39 +37,40 @@ export default function ProfileScreen() {
     createdCampaigns: 0,
     rank: 0,
   })
+  const query = useGetBalance({ address: publicKey })
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
-
     if (isAuthenticated && publicKey) {
         console.log("Calculating user stats...");
+
       calculateUserStats()
     }
-  }, [isAuthenticated, publicKey, accounts.data, paccounts.data])
+  }, [isAuthenticated, publicKey, accounts?.data, paccounts?.data])
 
   const calculateUserStats = () => {
-    if (!publicKey || !paccounts.data) return
+    if (!publicKey || !accounts?.data || !paccounts?.data) return
 
     const userAddress = publicKey.toString()
-    
+
     // Calculate created campaigns
-    // const createdCampaigns = accounts.data.filter(
-    //   (account: any) => account.account.creator.toString() === userAddress
-    // ).length
-    const createdCampaigns = 0
+    const createdCampaigns = accounts.data.filter(
+      (account: any) => {
+        return account?.account?.owner?.toString() === userAddress
+      }
+    ).length
+
     // Calculate participated campaigns
     const participatedCampaigns = paccounts.data.filter(
       (account: any) => {
-        console.log(account.account.points, account.account.user.toString(), userAddress)
-        return account.account.user.toString() === userAddress
+        return account?.account?.user?.toString() === userAddress
       }
     ).length
- 
 
     // Calculate total earnings
     const totalEarnings = paccounts.data
-      .filter((account: any) => account.account.user.toString() === userAddress)
-      .reduce((total: number, account: any) => total + account.account.points, 0) / 1000000000
+      .filter((account: any) => account?.account?.user?.toString() === userAddress)
+      .reduce((total: number, account: any) => total + (account?.account?.points || 0), 0) / 1000000000
 
     setUserStats({
       balance: 2.5, // Mock balance
@@ -82,6 +88,8 @@ export default function ProfileScreen() {
   }
 
   const handleDisconnect = () => {
+    if (!disconnect) return
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     Alert.alert(
       'Disconnect Wallet',
@@ -96,6 +104,17 @@ export default function ProfileScreen() {
           },
         },
       ]
+    )
+  }
+
+  // Show loading state if auth data is not ready
+  if (!authData) {
+    return (
+      <LinearGradient colors={['#0E151A', '#134156']} className="flex-1">
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-white text-lg">Loading...</Text>
+        </View>
+      </LinearGradient>
     )
   }
 
@@ -150,7 +169,7 @@ export default function ProfileScreen() {
           <View className="flex-row flex-wrap justify-between">
             <StatCard
               title="Balance"
-              value={`${userStats.balance} SOL`}
+              value={`${query.isLoading ? <ActivityIndicator /> : query.data ? lamportsToSol(query.data) : '0'} SOL`}
               icon="wallet"
               gradient={['#0E151A', '#134156']}
             />

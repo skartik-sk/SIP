@@ -12,7 +12,7 @@ export const DASHH_PROGRAM_ID = new PublicKey(DashhIDL.address)
 
 // This is a helper function to get the Dashh Anchor program.
 export function getDashhProgram(provider: AnchorProvider) {
-  return new Program(DashhIDL as Dashh, provider)
+  return new Program<Dashh>(DashhIDL as Dashh, provider)
 }
 
 // This is a helper function to get the program ID for the Dashh program depending on the cluster.
