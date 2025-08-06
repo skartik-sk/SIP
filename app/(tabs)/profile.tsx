@@ -168,6 +168,7 @@ export default function ProfileScreen() {
           <Text className="text-white text-xl font-bold mb-6">Your Stats</Text>
           <View className="flex-row flex-wrap justify-between">
             <StatCard
+            
               title="Balance"
               value={`${query.isLoading ? <ActivityIndicator /> : query.data ? lamportsToSol(query.data) : '0'} SOL`}
               icon="wallet"
@@ -197,6 +198,7 @@ export default function ProfileScreen() {
         {/* Rank Section */}
         <View className="px-6 mb-8">
           <LinearGradient
+           style={{ borderRadius: 16 }} 
             colors={['#134156', '#0E151A']}
             className="rounded-3xl p-6 shadow-lg"
           >
@@ -288,7 +290,8 @@ const StatCard = ({ title, value, icon, gradient }: {
   <View className="w-[47%] mb-6">
     <LinearGradient
       colors={gradient}
-      className="rounded-3xl p-5 shadow-lg"
+      style={{ borderRadius: 16 }} // Ensures rounded corners
+      className="p-5 shadow-lg"
     >
       <View className="items-center">
         <Ionicons name={icon as any} size={28} color="#14F1B2" />

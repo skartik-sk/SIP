@@ -1,6 +1,9 @@
 import { useWalletUi } from '@/components/solana/use-wallet-ui'
 import { useToast } from '@/components/ui/toast-provider'
 import { Dashh, DashhIDL } from '@/lib'
+import { SipVault } from '@/lib/sip_vault'
+import  Sip from '@/lib/sip_vault.json'
+
 import { CreateCampaignParams } from '@/types/campaign'
 import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
@@ -8,6 +11,7 @@ import { transact, Web3MobileWallet } from '@solana-mobile/mobile-wallet-adapter
 import {
   clusterApiUrl,
   Connection,
+  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
   TransactionMessage,
@@ -40,8 +44,12 @@ interface CampaignArgs {
 }
 
 interface participantargs {
-  id: number
-  user: PublicKey
+  id: string
+
+}
+
+interface updateArgs{
+  id:string,
   points: number
 }
 
@@ -74,12 +82,15 @@ interface ParticipantArgs {
 }
 
 export function useDashhProgram() {
+
+  const authority = new PublicKey('3Ydp1ttTsfpWJ4ri4hyfWDq52423ULREchvQVoF31u7L')
   const { account,signAndSendTransaction } = useWalletUi()
   const toast = useToast()
   const queryClient = useQueryClient()
 
   const connection = new Connection(clusterApiUrl('devnet'), 'confirmed')
   const program: Program<Dashh> = new Program(DashhIDL as Dashh, { connection })
+  const program_valt: Program<SipVault> = new Program(Sip as SipVault, { connection })
 
   // Queries using the new anchor program integration
   const accounts = useQuery({
@@ -150,11 +161,20 @@ export function useDashhProgram() {
           })
           .instruction()
 
+
+          const instructions2 = await program_valt.methods
+          .initialize(campaignId, new BN(endtime), authority, new BN(reward * LAMPORTS_PER_SOL))
+      .accounts({
+        creater: account.publicKey,
+      })
+   
+        .instruction()
+
         // Construct the Versioned message and transaction.
         const txMessage = new TransactionMessage({
           payerKey: account.publicKey,
           recentBlockhash: blockhash.blockhash,
-          instructions: [instructions],
+          instructions: [instructions, instructions2],
         }).compileToV0Message()
 
         const transferTx = new VersionedTransaction(txMessage)
@@ -183,14 +203,14 @@ export function useDashhProgram() {
 
   const createParticipant = useMutation<string, Error, participantargs>({
     mutationKey: ['create-Participant', 'create', 'devnet'],
-    mutationFn: async ({ id, user }) => {
+    mutationFn: async ({ id }) => {
       if (!account) {
         throw new Error('Wallet not connected')
       }
 
       console.log('👤 Joining campaign with Mobile Wallet Adapter...', {
         campaignId: id,
-        user: user.toString().slice(0, 8) + '...',
+        user: account.publicKey.toString().slice(0, 8) + '...',
       })
 
       const blockhash = await connection.getLatestBlockhash()
@@ -198,7 +218,7 @@ export function useDashhProgram() {
         const instructions = await program.methods
               .createParticipent(
                 new anchor.BN(id),
-                user
+                account.publicKey
               )
               .accounts({
             signer: account.publicKey,
@@ -235,58 +255,53 @@ export function useDashhProgram() {
     },
   })
 
-  const updateParticipant = useMutation<string, Error, participantargs>({
+  const updateParticipant = useMutation<string, Error, updateArgs>({
     mutationKey: ['update-participant', 'update', 'devnet'],
-    mutationFn: async ({ id, user, points }) => {
+    mutationFn: async ({ id, points }) => {
       if (!account) {
         throw new Error('Wallet not connected')
       }
 
       console.log('📈 Updating points with Mobile Wallet Adapter...', {
         campaignId: id,
-        user: user.toString().slice(0, 8) + '...',
+        user: account.publicKey.toString().slice(0, 8) + '...',
         points,
       })
 
-      const signature = await transact(async (wallet: Web3MobileWallet) => {
-        console.log('📱 Authorizing wallet...')
-        const authorizationResult = await wallet.authorize({
-          chain: 'solana:devnet',
-          identity: APP_IDENTITY,
-        })
+      const blockhash = await connection.getLatestBlockhash()
 
-        const authorizedPubkey = new PublicKey(toByteArray(authorizationResult.accounts[0].address))
+        const instructions = await program.methods
+              .updatedParticipent(
+                new anchor.BN(id),
+                account.publicKey,
+                new anchor.BN(points)
+              )
+              .accounts({
+            signer: account.publicKey,
+          })
+          .instruction()
 
-        const latestBlockhash = await connection.getLatestBlockhash()
-
-        // Placeholder instruction for updating participant
-        const instructions = [
-          SystemProgram.transfer({
-            fromPubkey: authorizedPubkey,
-            toPubkey: user, // Transfer points as SOL to user
-            lamports: points,
-          }),
-        ]
-
+        // Construct the Versioned message and transaction.
         const txMessage = new TransactionMessage({
-          payerKey: authorizedPubkey,
-          recentBlockhash: latestBlockhash.blockhash,
-          instructions,
+          payerKey: account.publicKey,
+          recentBlockhash: blockhash.blockhash,
+          instructions: [instructions],
         }).compileToV0Message()
 
-        const transaction = new VersionedTransaction(txMessage)
+        const transferTx = new VersionedTransaction(txMessage)
 
-        console.log('📤 Signing points update...')
-        const transactionSignatures = await wallet.signAndSendTransactions({
-          transactions: [transaction],
-        })
+       const txSignature = await signAndSendTransaction(transferTx,1)
+   const confirmationResult = await connection.confirmTransaction(
+  txSignature,
+  "confirmed"
+);
+      if (confirmationResult.value.err) {
+        throw new Error(JSON.stringify(confirmationResult.value.err))
+      } else {
+        console.log('Transaction successfully submitted!')
+        return txSignature
+      }},
 
-        console.log('✅ Points updated, signature:', transactionSignatures[0].slice(0, 8) + '...')
-        return transactionSignatures[0]
-      })
-
-      return signature
-    },
     onSuccess: () => {
       toast.show('Points updated successfully!')
       accounts.refetch()

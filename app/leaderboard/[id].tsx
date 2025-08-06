@@ -22,16 +22,31 @@ interface LeaderboardEntry {
   campaigns: number
 }
 
+import { useAuth } from '@/components/auth/auth-provider'
 export default function LeaderboardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [loading, setLoading] = useState(true)
-  const { paccounts } = useDashhProgram()
+  const { paccounts,updateParticipant } = useDashhProgram()
+  const { publicKey } = useAuth()
+  const [isParticipating, setIsParticipating] = useState(false)
 
   useEffect(() => {
     calculateLeaderboard()
-  }, [paccounts.data, id])
+    // Check if current user is participating
+    if (paccounts.data && publicKey && id) {
+      const userAddress = publicKey.toString()
+      const participated = paccounts.data.some(
+        (participant: any) =>
+          participant.account.id.toString() === id &&
+          participant.account.user.toString() === userAddress
+      )
+      setIsParticipating(participated)
+    } else {
+      setIsParticipating(false)
+    }
+  }, [paccounts.data, id, publicKey])
 
   const calculateLeaderboard = () => {
     try {
@@ -93,6 +108,9 @@ export default function LeaderboardScreen() {
   const handleVerifyWithReclaim = async () => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+        const randomValue = Math.floor(Math.random() * 101)
+      const updatedata=
+           { id, points: randomValue } 
       Alert.alert(
         'Verify with Reclaim Protocol',
         'This will verify your engagement using zero-knowledge proofs. Continue?',
@@ -100,9 +118,34 @@ export default function LeaderboardScreen() {
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Verify',
+      onPress: async () => {
+        Alert.alert('Verification Started', 'Reclaim Protocol verification is in progress...')
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        Alert.alert('Verification Complete', 'You have been verified successfully!(Due to unavailability of Reclaim Protocol, this is a simulated verification)',
+        [
+          {
+            text: 'OK',
             onPress: () => {
-              Alert.alert('Verification Started', 'Reclaim Protocol verification is in progress...')
+              Alert.alert('You got verified!', randomValue.toString() + ' points will updated once you click on the Reclaim button below.',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Reclaim',
+                    onPress: async () => {
+                      await updateParticipant.mutateAsync(updatedata)
+                    }
+                  },
+                  
+                ]
+              )
             },
+          },
+        ]
+        )
+      },
           },
         ]
       )
@@ -110,7 +153,10 @@ export default function LeaderboardScreen() {
       console.error('Error with Reclaim verification:', error)
       Alert.alert('Error', 'Failed to start verification process')
     }
-  }
+    finally {
+      paccounts.refetch()
+      setLoading(false)}
+    }
 
   const renderLeaderboardItem = ({ item }: { item: LeaderboardEntry }) => (
     <View style={styles.leaderboardItem}>
@@ -228,9 +274,12 @@ export default function LeaderboardScreen() {
           </View>
         }
       />
-
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.reclaimButton} onPress={handleVerifyWithReclaim}>
+        <TouchableOpacity
+          style={[styles.reclaimButton, !isParticipating && { opacity: 0.6 }]}
+          onPress={handleVerifyWithReclaim}
+          disabled={!isParticipating}
+        >
           <LinearGradient
             colors={[COLORS.ACCENT_GREEN, COLORS.BRIGHT_GREEN]}
             style={styles.reclaimButtonGradient}

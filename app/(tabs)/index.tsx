@@ -127,9 +127,10 @@ export default function DiscoverScreen() {
     router.push(`/campaign/${campaign.id}`)
   }
 
-  const handleLeaderboard = () => {
+  const handleLeaderboard = (campaign: any) => {
+      if (!campaign?.id) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    router.push('/leaderboard')
+    router.push(`/leaderboard/${campaign.id}`)
   }
 
   const renderCampaignCard = ({ item }: { item: Campaign }) => {
@@ -272,10 +273,7 @@ export default function DiscoverScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                  router.push(`/leaderboard?campaignId=${item.id}`)
-                }}
+                onPress={() => handleLeaderboard(item)}
               >
                 <Ionicons name="trophy" size={14} color="#14F1B2" />
                 <Text style={{
@@ -445,7 +443,7 @@ export default function DiscoverScreen() {
           style={{
             width: 64,
             height: 64,
-            borderRadius: 32,
+            borderRadius: 20,
             alignItems: 'center',
             justifyContent: 'center',
           }}

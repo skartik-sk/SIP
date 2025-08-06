@@ -8,6 +8,11 @@
     "scheme": "templateexpobasic",
      "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+     "splash": {
+      "image": "./assets/images/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#e4e8eb"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.skartik-sk.sip"
@@ -18,28 +23,32 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.skartik_sk.sip"
+      "package": "com.skartik_sk.sip",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "skartik.xyz"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.jpg"
     },
     "plugins": [
       "expo-router",
-      [
+
         "expo-splash-screen",
-        {
-          "backgroundColor": "#FFFFFF",
-          "dark": {
-            "backgroundColor": "#000000",
-            "image": "./assets/images/splash-icon.png"
-          },
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain"
-        }
-      ],
+       
+
       "expo-web-browser",
       "expo-font",
       [

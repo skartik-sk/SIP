@@ -3,19 +3,18 @@ import { COLORS, SPACING } from '@/constants/theme'
 import { useDashhProgram } from '@/hooks/useDashhProgram'
 import { bnToTimestamp } from '@/utils/lamports-to-sol'
 import { Ionicons } from '@expo/vector-icons'
-import { PublicKey } from '@solana/web3.js'
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 
 interface CampaignDetails {
@@ -109,9 +108,7 @@ export default function CampaignDetailsScreen() {
       
               try {
                 await createParticipant.mutateAsync({
-                  id: parseInt(campaign.id),
-                  user: publicKey ,
-                   points: 0,
+                  id: campaign.id,
                 })
                 
                 Alert.alert(
@@ -209,6 +206,24 @@ export default function CampaignDetailsScreen() {
             <Text style={styles.description}>{campaign.description}</Text>
           </View>
 
+          {/* Leaderboard Button (if participating, show above How to Participate) */}
+          {campaign.isParticipating && (
+            <View style={{marginBottom: 24}}>
+              <TouchableOpacity
+                style={styles.participateButton}
+                onPress={() => router.push(`/leaderboard/${campaign.id}`)}
+              >
+                <LinearGradient
+                  colors={[COLORS.ACCENT_GREEN, COLORS.BRIGHT_GREEN]}
+                  style={styles.participateButtonGradient}
+                >
+                  <Ionicons name="trophy" size={20} color={COLORS.WHITE} />
+                  <Text style={styles.participateButtonText}>View Leaderboard</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* How to Participate */}
           <View style={styles.howToSection}>
             <Text style={styles.sectionTitle}>How to Participate</Text>
@@ -235,6 +250,24 @@ export default function CampaignDetailsScreen() {
               />
             </View>
           </View>
+
+          {/* Leaderboard Button (if NOT participating, show below Earn Rewards) */}
+          {!campaign.isParticipating && (
+            <View style={{marginTop: 24}}>
+              <TouchableOpacity
+                style={styles.participateButton}
+                onPress={() => router.push(`/leaderboard/${campaign.id}`)}
+              >
+                <LinearGradient
+                  colors={[COLORS.ACCENT_GREEN, COLORS.BRIGHT_GREEN]}
+                  style={styles.participateButtonGradient}
+                >
+                  <Ionicons name="trophy" size={20} color={COLORS.WHITE} />
+                  <Text style={styles.participateButtonText}>View Leaderboard</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -268,9 +301,9 @@ export default function CampaignDetailsScreen() {
           <View style={styles.participatingIndicator}>
             <LinearGradient
               colors={[COLORS.BRIGHT_GREEN, COLORS.LIGHT_GREEN]}
-              style={styles.participatingGradient}
+              style={[styles.participatingGradient, { opacity: 0.6 }]}
             >
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.WHITE} />
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.WHITE}  />
               <Text style={styles.participatingText}>Already Participating</Text>
             </LinearGradient>
           </View>
