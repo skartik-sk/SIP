@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.skartik-sk.sip"
     },
     "android": {
+      
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -66,5 +67,6 @@
       "router": {},
       "eas": {}
     }
+    
   }
 }
