@@ -9,6 +9,15 @@
 ➤ Targeting micro-influencers to amplify brand reach directly.  
 ➤ Scalable, trust-based platform—no middlemen, just results.
 
+---
+
+## 🎬 Demo & Presentation
+
+- 📺 **Video Demo:** [https://sip-presentation.skartik.xyz](https://sip-presentation.skartik.xyz)
+- 📑 **Presentation Slides:** [https://www.figma.com/deck/VzAL8wwx8l4TMRMxIhrXlA](https://www.figma.com/deck/VzAL8wwx8l4TMRMxIhrXlA)
+
+---
+
 ## 🌟 Why SIP?
 
 - **Transparency & Accountability**: Verified engagement through the Reclaim Protocol, ensuring real data and eliminating fake views.
@@ -58,6 +67,8 @@ npm install
 yarn install
 # or
 pnpm install
+# or
+bun install
 ```
 
 ### Running the Application
@@ -116,7 +127,9 @@ Once engagement is verified, payments are processed through a secure escrow prog
 - **Anchor Framework** for smart contract development
 - **Mobile Wallet Adapter** for seamless wallet connections
 - **SPL Token** support for custom token operations
-- **Program ID**: `7qpRXNFY5PJQfwptK4BosJ5jCnVeEYRWATFu8BBDTVcr`
+- **Program IDs**:  
+  - `7qpRXNFY5PJQfwptK4BosJ5jCnVeEYRWATFu8BBDTVcr`  
+  - `JAXfUBqk3rTzyFPq1NPBv3S4HUCUfcsuo1oT5GzGXMgt`
 
 ### Development Features
 - **TypeScript** for type safety
